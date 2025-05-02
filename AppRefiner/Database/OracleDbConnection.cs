@@ -1,5 +1,7 @@
+using Microsoft.VisualBasic.Devices;
 using Oracle.ManagedDataAccess.Client;
 using System.Data;
+using System.Diagnostics;
 using System.Text.RegularExpressions;
 
 namespace AppRefiner.Database
@@ -149,9 +151,11 @@ namespace AppRefiner.Database
         /// <returns>A list of TNS names</returns>
         public static List<string> GetAllTnsNames()
         {
-            List<string> tnsNames = new();
-            string? tnsNamesPath = GetTnsNamesPath();
+            //List<string> tnsNames = new();
+            //string? tnsNamesPath = GetTnsNamesPath();
 
+            List<string> tnsNames = new();
+            string? tnsNamesPath = @"C:\oracle\product\12.2.0\client_1\network\admin\tnsnames.ora";
             if (string.IsNullOrEmpty(tnsNamesPath) || !File.Exists(tnsNamesPath))
             {
                 return tnsNames;
@@ -161,8 +165,8 @@ namespace AppRefiner.Database
             {
                 string content = File.ReadAllText(tnsNamesPath);
 
-                // Regular expression to find TNS entries
-                Regex regex = new(@"^\s*([a-zA-Z0-9_\-]+)\s*=", RegexOptions.Multiline);
+                /* Regular expression to find TNS entries
+                Regex regex = new(@"^\s*([a-zA-Z0-9_\.]+)\s*=", RegexOptions.Multiline);
                 MatchCollection matches = regex.Matches(content);
 
                 foreach (Match match in matches)
@@ -171,13 +175,13 @@ namespace AppRefiner.Database
                     {
                         tnsNames.Add(match.Groups[1].Value.Trim());
                     }
-                }
+                }*/
             }
             catch (Exception)
             {
                 // Ignore any errors reading the file
             }
-
+            tnsNames.Add("cs90tst.buffalo.edu");
             return tnsNames;
         }
 

@@ -299,7 +299,6 @@ namespace AppRefiner.Dialogs
             {
                 LoadOracleTnsNames();
             }
-            
             // Update UI based on initial radio button selection
             UpdateUIForConnectionType();
         }
@@ -432,6 +431,8 @@ namespace AppRefiner.Dialogs
             {
                 dbNameComboBox.SelectedIndex = 0;
             }
+
+            //MessageBox.Show(tnsNames[dbNameComboBox.SelectedIndex]);
         }
 
         private void DbNameComboBox_SelectedIndexChanged(object? sender, EventArgs e)

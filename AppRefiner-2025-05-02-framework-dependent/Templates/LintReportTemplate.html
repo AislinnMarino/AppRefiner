@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lint Report - {{projectName}}</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 20px; color: #333; }
+    h1 { color: #2c3e50; border-bottom: 2px solid #ecf0f1; padding-bottom: 10px; }
+    h2 { color: #3498db; margin-top: 30px; padding-bottom: 5px; border-bottom: 1px solid #ecf0f1; }
+    .tabs-container { margin: 20px 0 10px 0; }
+    .tabs { display: flex; flex-wrap: wrap; border-bottom: 1px solid #ddd; }
+    .tab-btn { background-color: #f8f9fa; border: 1px solid #ddd; border-bottom: none; padding: 8px 16px; 
+              cursor: pointer; margin-right: 2px; border-radius: 4px 4px 0 0; }
+    .tab-btn:hover { background-color: #e9ecef; }
+    .tab-btn.active { background-color: #3498db; color: white; border-color: #2980b9; }
+    .summary { background-color: #f8f9fa; border-radius: 5px; padding: 15px; margin: 20px 0; }
+    .program-item { margin-bottom: 30px; border: 1px solid #ddd; border-radius: 5px; overflow: hidden; }
+    .program-header { background-color: #f0f8ff; padding: 10px 15px; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; }
+    .program-content { padding: 0 15px; }
+    table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+    th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid #ddd; }
+    th { background-color: #f5f5f5; }
+    tr:hover { background-color: #f9f9f9; }
+    .error { color: #e74c3c; }
+    .warning { color: #f39c12; }
+    .info { color: #3498db; }
+    .timestamp { color: #7f8c8d; font-size: 0.9em; margin-top: 5px; }
+    .expanded { display: block; }
+    .collapsed { display: none; }
+    .expand-button { background: none; border: none; color: #3498db; cursor: pointer; }
+    .stats { display: flex; gap: 20px; margin: 20px 0; }
+    .stat-box { background-color: #f8f9fa; border-radius: 5px; padding: 10px 15px; flex: 1; text-align: center; }
+    .stat-box.errors { border-left: 4px solid #e74c3c; }
+    .stat-box.warnings { border-left: 4px solid #f39c12; }
+    .stat-box.info { border-left: 4px solid #3498db; }
+    .stat-count { font-size: 1.5em; font-weight: bold; }
+    .filter-controls { margin: 20px 0; background-color: #f8f9fa; padding: 10px 15px; border-radius: 5px; }
+    .filter-btn { background-color: #fff; border: 1px solid #ddd; padding: 5px 10px; margin-right: 5px; border-radius: 3px; cursor: pointer; }
+    .filter-btn:hover { background-color: #f0f0f0; }
+    .filter-btn.active { background-color: #3498db; color: white; border-color: #2980b9; }
+    .issue-row { transition: display 0.2s ease; }
+    .hide-error .issue-error { display: none; }
+    .hide-warning .issue-warning { display: none; }
+    .hide-info .issue-info { display: none; }
+    .program-item.empty { display: none; }
+    
+    /* Linters section styles */
+    .linters-section { margin: 20px 0; background-color: #f8f9fa; border-radius: 5px; overflow: hidden; }
+    .linters-header { background-color: #e9ecef; padding: 10px 15px; cursor: pointer; }
+    .linters-header h3 { margin: 0; display: flex; justify-content: space-between; }
+    .linters-content { padding: 0; max-height: 0; overflow: hidden; transition: max-height 0.3s ease; }
+    .linters-content.expanded { max-height: 500px; padding: 15px; border-top: 1px solid #ddd; }
+    #linters-toggle { font-size: 0.8em; color: #3498db; }
+    #linters-table { width: 100%; }
+    #linters-table th { background-color: #f0f0f0; }
+  </style>
+</head>
+<body>
+  <h1>Lint Report for Project: <span id="projectName">{{projectName}}</span></h1>
+  <p class="timestamp">Generated on: <span id="timestamp">{{timestamp}}</span></p>
+  
+  <div class="stats">
+    <div class="stat-box errors"><div class="stat-count" id="totalErrors">0</div><div>Errors</div></div>
+    <div class="stat-box warnings"><div class="stat-count" id="totalWarnings">0</div><div>Warnings</div></div>
+    <div class="stat-box info"><div class="stat-count" id="totalInfo">0</div><div>Info</div></div>
+  </div>
+
+  <div class="linters-section">
+    <div class="linters-header" onclick="toggleLinters()">
+      <h3>Applied Linters <span id="linters-toggle">[Show]</span></h3>
+    </div>
+    <div id="linters-content" class="linters-content collapsed">
+      <table id="linters-table">
+        <thead>
+          <tr>
+            <th>Linter</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Linters will be loaded here -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+  
+  <div class="tabs-container">
+    <div class="tabs" id="typeTabs">
+      <!-- Type tabs will be inserted here by JavaScript -->
+      <button class="tab-btn active" data-type="all">All Types</button>
+    </div>
+  </div>
+  
+  <div class="filter-controls">
+    <span>Filter issues: </span>
+    <button class="filter-btn active" data-type="all">All</button>
+    <button class="filter-btn" data-type="error">Errors Only</button>
+    <button class="filter-btn" data-type="warning">Warnings Only</button>
+    <button class="filter-btn" data-type="info">Info Only</button>
+    <button class="filter-btn" data-type="error-warning">Errors &amp; Warnings</button>
+  </div>
+  
+  <div class="summary">
+    <p><strong>Total Programs:</strong> <span id="totalPrograms">0</span></p>
+    <p><strong>Total Issues:</strong> <span id="totalIssues">0</span> (<span id="summaryErrors">0</span> errors, <span id="summaryWarnings">0</span> warnings, <span id="summaryInfo">0</span> info)</p>
+  </div>
+  
+  <h2>Program Reports</h2>
+  <div id="programReports">
+    <!-- Program reports will be inserted here by JavaScript -->
+  </div>
+  
+  <p class="timestamp">Report generated by AppRefiner - © 2023</p>
+
+  <script>
+    // Load and render report data
+    let reportData = null;
+    window.currentTabType = 'all'; // Initialize current tab type
+
+    // Load report data from JSON
+    function loadReportData(jsonData) {
+      reportData = typeof jsonData === 'string' ? JSON.parse(jsonData) : jsonData;
+      
+      // Set up type tabs first
+      setupTypeTabs(reportData);
+      
+      // Then render the report with all types
+      renderReport(reportData);
+    }
+    
+    // Set up the type tabs based on available PeopleCodeTypes
+    function setupTypeTabs(data) {
+      const tabsContainer = document.getElementById('typeTabs');
+    
+      // Keep "All Types" tab and then add other types
+      const allTypesTab = tabsContainer.querySelector('[data-type="all"]');
+      tabsContainer.innerHTML = '';
+      tabsContainer.appendChild(allTypesTab);
+    
+      // Add click event handler to the "All Types" tab
+      allTypesTab.addEventListener('click', () => switchTab('all'));
+      
+      // Count programs by type
+      const typeCount = {};
+      data.programReports.forEach(program => {
+        if (program.peopleCodeType) {
+          typeCount[program.peopleCodeType] = (typeCount[program.peopleCodeType] || 0) + 1;
+        }
+      });
+      
+      // Create a tab for each type with counts
+      Object.keys(typeCount).sort().forEach(type => {
+        const tab = document.createElement('button');
+        tab.className = 'tab-btn';
+        tab.setAttribute('data-type', type);
+        tab.textContent = `${type} (${typeCount[type]})`;
+        tab.addEventListener('click', () => switchTab(type));
+        tabsContainer.appendChild(tab);
+      });
+    }
+    
+    // Switch between tabs
+    function switchTab(typeName) {
+      // Update active tab
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+      });
+      document.querySelector(`.tab-btn[data-type="${typeName}"]`).classList.add('active');
+      
+      // Store current tab type in a global variable for use in renderReport
+      window.currentTabType = typeName;
+      
+      // Filter programs by type
+      if (typeName === 'all') {
+        // Show all programs
+        renderReport(reportData);
+      } else {
+        // Filter to show only programs of specified type
+        const filteredData = {
+          ...reportData,
+          programReports: reportData.programReports.filter(program => 
+            program.peopleCodeType === typeName
+          )
+        };
+        
+        // Recalculate totals for the filtered data
+        filteredData.totalErrors = 0;
+        filteredData.totalWarnings = 0;
+        filteredData.totalInfo = 0;
+        filteredData.totalIssues = 0;
+        
+        filteredData.programReports.forEach(program => {
+          program.reports.forEach(report => {
+            filteredData.totalIssues++;
+            if (report.type === 'Error') filteredData.totalErrors++;
+            else if (report.type === 'Warning') filteredData.totalWarnings++;
+            else if (report.type === 'Info') filteredData.totalInfo++;
+          });
+        });
+
+        renderReport(filteredData);
+        // click the active filter button to trigger its filtering
+        document.querySelector("button.filter-btn.active").click();
+      }
+    }
+
+    // Toggle linters section
+    function toggleLinters() {
+      const content = document.getElementById('linters-content');
+      const toggle = document.getElementById('linters-toggle');
+      
+      if (content.classList.contains('collapsed')) {
+        content.classList.remove('collapsed');
+        content.classList.add('expanded');
+        toggle.textContent = '[Hide]';
+      } else {
+        content.classList.remove('expanded');
+        content.classList.add('collapsed');
+        toggle.textContent = '[Show]';
+      }
+    }
+    
+    // Render the linters section
+    function renderLinters(data) {
+      if (!data.activeLinters || data.activeLinters.length === 0) {
+        // If no linters data, show a message
+        document.getElementById('linters-table').outerHTML = '<p>No linter information available</p>';
+        return;
+      }
+      
+      const tbody = document.querySelector('#linters-table tbody');
+      tbody.innerHTML = '';
+      
+      // Add a row for each linter
+      data.activeLinters.forEach(linter => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${escapeHtml(linter.name)}</td>
+          <td>${escapeHtml(linter.description)}</td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+    
+    // Render the entire report
+    function renderReport(data) {
+      // Set project name and timestamp
+      document.getElementById('projectName').textContent = data.projectName;
+      document.getElementById('timestamp').textContent = data.timestamp;
+      
+      // Render linters information
+      renderLinters(data);
+      
+      // Set initial summary statistics
+      document.getElementById('totalErrors').textContent = data.totalErrors;
+      document.getElementById('totalWarnings').textContent = data.totalWarnings;
+      document.getElementById('totalInfo').textContent = data.totalInfo;
+      document.getElementById('totalPrograms').textContent = data.programReports.length;
+      document.getElementById('totalIssues').textContent = data.totalIssues;
+      document.getElementById('summaryErrors').textContent = data.totalErrors;
+      document.getElementById('summaryWarnings').textContent = data.totalWarnings;
+      document.getElementById('summaryInfo').textContent = data.totalInfo;
+      
+      // Clear existing program reports
+      const programReportsContainer = document.getElementById('programReports');
+      programReportsContainer.innerHTML = '';
+      
+      // Render each program report
+      data.programReports.forEach((program, index) => {
+        const programId = `program-${index + 1}`;
+        const programItem = document.createElement('div');
+        programItem.className = 'program-item';
+        
+        // Calculate program-specific counts
+        const programErrors = program.reports.filter(r => r.type === 'Error').length;
+        const programWarnings = program.reports.filter(r => r.type === 'Warning').length;
+        const programInfo = program.reports.filter(r => r.type === 'Info').length;
+        
+        // Format program path based on current tab
+        let displayPath = program.programPath;
+        
+        // Only show type prefix in "All Types" mode
+        if (window.currentTabType === 'all' && program.peopleCodeType) {
+          displayPath = `${program.peopleCodeType}: ${program.programPath}`;
+        }
+        
+        // Create program header
+        programItem.innerHTML = `
+          <div class="program-header">
+            <div><strong>${displayPath}</strong> <span class="issue-count">(${program.reports.length} issues)</span></div>
+            <div>
+              ${programErrors > 0 ? `<span class="error">${programErrors} errors</span> ` : ''}
+              ${programWarnings > 0 ? `<span class="warning">${programWarnings} warnings</span> ` : ''}
+              ${programInfo > 0 ? `<span class="info">${programInfo} info</span> ` : ''}
+              <button class="expand-button" onclick="toggleContent('${programId}')">Expand</button>
+            </div>
+          </div>
+          <div id="${programId}" class="program-content collapsed">
+            <table>
+              <thead>
+                <tr>
+                  <th>Type</th>
+                  <th>Line</th>
+                  <th>Message</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${program.reports.map(report => {
+                  const typeClass = report.type === 'Error' ? 'error' : 
+                                    report.type === 'Warning' ? 'warning' : 'info';
+                  const issueClass = report.type === 'Error' ? 'issue-error' : 
+                                     report.type === 'Warning' ? 'issue-warning' : 'issue-info';
+                  return `
+                    <tr class="issue-row ${issueClass}">
+                      <td class="${typeClass}">${report.type}</td>
+                      <td>${report.line}</td>
+                      <td>${escapeHtml(report.message)}</td>
+                    </tr>
+                  `;
+                }).join('')}
+              </tbody>
+            </table>
+          </div>
+        `;
+        
+        programReportsContainer.appendChild(programItem);
+      });
+    }
+    
+    // Escape HTML to prevent XSS
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+    
+    // Toggle expand/collapse for program content
+    function toggleContent(id) {
+      const content = document.getElementById(id);
+      const button = document.querySelector(`[onclick="toggleContent('${id}')"]`);
+      if (content.classList.contains('collapsed')) {
+        content.classList.remove('collapsed');
+        content.classList.add('expanded');
+        button.textContent = 'Collapse';
+      } else {
+        content.classList.remove('expanded');
+        content.classList.add('collapsed');
+        button.textContent = 'Expand';
+      }
+    }
+    
+    // Filter issues by type
+    document.addEventListener('DOMContentLoaded', function() {
+      const filterButtons = document.querySelectorAll('.filter-btn');
+      const reportBody = document.body;
+      
+      // Handle filter button clicks
+      filterButtons.forEach(button => {
+        button.addEventListener('click', function() {
+          // Update active button
+          filterButtons.forEach(btn => btn.classList.remove('active'));
+          this.classList.add('active');
+          
+          // Get filter type
+          const filterType = this.getAttribute('data-type');
+          
+          // Reset all filters first
+          reportBody.classList.remove('hide-error', 'hide-warning', 'hide-info');
+          
+          // Apply appropriate filters
+          switch (filterType) {
+            case 'error':
+              reportBody.classList.add('hide-warning', 'hide-info');
+              break;
+            case 'warning':
+              reportBody.classList.add('hide-error', 'hide-info');
+              break;
+            case 'info':
+              reportBody.classList.add('hide-error', 'hide-warning');
+              break;
+            case 'error-warning':
+              reportBody.classList.add('hide-info');
+              break;
+            // 'all' or default - show everything
+          }
+          
+          // Update the issue count for each program and hide empty programs
+          updateProgramCounts();
+        });
+      });
+      
+      function updateProgramCounts() {
+        // Determine which types are currently visible based on applied filters
+        const errorVisible = !document.body.classList.contains('hide-error');
+        const warningVisible = !document.body.classList.contains('hide-warning');
+        const infoVisible = !document.body.classList.contains('hide-info');
+        
+        // For each program, count visible issues and update the header or hide if empty
+        document.querySelectorAll('.program-item').forEach(program => {
+          const programId = program.querySelector('.program-content').id;
+          
+          // Count items that match the current filter
+          let visibleCount = 0;
+          if (errorVisible) visibleCount += program.querySelectorAll('tbody tr.issue-error').length;
+          if (warningVisible) visibleCount += program.querySelectorAll('tbody tr.issue-warning').length;
+          if (infoVisible) visibleCount += program.querySelectorAll('tbody tr.issue-info').length;
+          
+          const countDisplay = program.querySelector('.issue-count');
+          
+          // Update issue count
+          if (countDisplay) {
+            countDisplay.textContent = `(${visibleCount} issues)`;
+          }
+          
+          // Hide program if it has no visible issues
+          if (visibleCount === 0) {
+            program.classList.add('empty');
+          } else {
+            program.classList.remove('empty');
+          }
+        });
+        
+        // Update total visible counts
+        updateTotalVisibleCounts();
+      }
+      
+      function updateTotalVisibleCounts() {
+        // Count visible issues by type
+        const visibleErrors = document.querySelectorAll('.program-item:not(.empty) .issue-error:not([style*="display: none"])').length;
+        const visibleWarnings = document.querySelectorAll('.program-item:not(.empty) .issue-warning:not([style*="display: none"])').length;
+        const visibleInfo = document.querySelectorAll('.program-item:not(.empty) .issue-info:not([style*="display: none"])').length;
+        const totalVisible = visibleErrors + visibleWarnings + visibleInfo;
+        const visiblePrograms = document.querySelectorAll('.program-item:not(.empty)').length;
+        
+        // Update summary statistics with visible counts
+        document.getElementById('totalPrograms').textContent = visiblePrograms;
+        document.getElementById('totalIssues').textContent = totalVisible;
+        document.getElementById('summaryErrors').textContent = visibleErrors;
+        document.getElementById('summaryWarnings').textContent = visibleWarnings;
+        document.getElementById('summaryInfo').textContent = visibleInfo;
+      }
+      
+      // Check for embedded data and load it if present
+      if (reportJSON) {
+        loadReportData(reportJSON);
+        // Initialize visible counts based on default filter (all)
+        updateProgramCounts();
+      }
+    });
+  </script>
+</body>
+</html>

@@ -495,7 +495,18 @@ namespace AppRefiner.Dialogs
                 string username = usernameTextBox.Text;
                 string password = passwordTextBox.Text;
                 string @namespace = readOnlyRadioButton.Checked ? namespaceTextBox.Text : string.Empty;
-                
+                string sourceStuff = @"
+                    (description =
+                        (address_list =
+                        (address = (protocol = tcp)(host = pstst - db.acsu.buffalo.edu)(port = 1521)))
+                        (connect_data =
+                        (service_name = cststutl.buffalo.edu)
+                        )
+                    )";
+
+
+
+
                 if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(password))
                 {
                     MessageBox.Show("Please enter username and password", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -508,7 +519,7 @@ namespace AppRefiner.Dialogs
                     return;
                 }
 
-                var connectionString = $"Data Source={dbName};User Id={username};Password={password};";
+                var connectionString = $"Data Source={sourceStuff};User Id={username};Password={password};";
                 string? namespaceForConnection = readOnlyRadioButton.Checked ? @namespace : null;
                 
                 try

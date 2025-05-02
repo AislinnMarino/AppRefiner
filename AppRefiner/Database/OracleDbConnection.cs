@@ -181,7 +181,7 @@ namespace AppRefiner.Database
             {
                 // Ignore any errors reading the file
             }
-            tnsNames.Add("cs90tst.buffalo.edu");
+            tnsNames.Add("cs90tst.buffalo.edu=(description=(address = (protocol = tcp)(host = pstst-db.acsu.buffalo.edu)(port = 1521)) (connect_data = (service_name = cststutl.buffalo.edu)))");
             return tnsNames;
         }
 
